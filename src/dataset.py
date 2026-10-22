@@ -7,7 +7,7 @@ from torch.utils.data import Dataset
 class WidarBVPDataset(Dataset):
     """
     Dataset loader khusus untuk data Widar 3.0 BVP.
-    Mengubah ukuran dimensi waktu secara otomatis agar seragam (misal: 20 frame).
+    Menyeleraskan dimensi time step secara otomatis menggunakan interpolasi.
     """
     def __init__(self, file_paths, target_time_steps=20):
         self.file_paths = file_paths
@@ -22,31 +22,26 @@ class WidarBVPDataset(Dataset):
         
         # Load matriks BVP
         data = sio.loadmat(file_path)
-        matriks = data['velocity_spectrum_ro'] # Misal shape: (20, 20, T)
+        matriks = data['velocity_spectrum_ro']
         
         # Convert ke Tensor PyTorch
         tensor_bvp = torch.tensor(matriks, dtype=torch.float32)
         
-        # Atur dimensi agar berbentuk (1, H, W, T)
+        # Pastikan ada dimensi channel -> (1, H, W, T)
         if tensor_bvp.dim() == 3:
             tensor_bvp = tensor_bvp.unsqueeze(0)
             
-        # Samakan ukuran dimensi waktu (T) menjadi target_time_steps (20) menggunakan interpolasi
-        curr_t = tensor_bvp.shape[-1]
-        if curr_t != self.target_time_steps:
-            # Reshape sementara untuk interpolasi 1D pada dimensi waktu
-            # (1, 1*20*20, T) -> (1, 400, T)
-            c, h, w, t = tensor_bvp.shape
-            tensor_bvp = tensor_bvp.view(c, h * w, t)
-            
-            # Interpolasi ke target_time_steps
+        c, h, w, t = tensor_bvp.shape
+        
+        # Jika time step beda dari target (20), lakukan interpolasi
+        if t != self.target_time_steps:
+            # Gunakan .reshape() sebagai pengganti .view()
+            tensor_bvp = tensor_bvp.reshape(c, h * w, t)
             tensor_bvp = F.interpolate(tensor_bvp, size=self.target_time_steps, mode='linear', align_corners=False)
+            tensor_bvp = tensor_bvp.reshape(c, h, w, self.target_time_steps)
             
-            # Kembalikan ke shape (1, T, H, W)
-            tensor_bvp = tensor_bvp.view(c, h, w, self.target_time_steps)
-            
-        # Permute agar format akhirnya (Channel=1, Time=20, Height=20, Width=20)
-        tensor_bvp = tensor_bvp.permute(0, 3, 1, 2)
+        # Permute ke format PyTorch: (Channel=1, Time=20, Height=20, Width=20)
+        tensor_bvp = tensor_bvp.permute(0, 3, 1, 2).contiguous()
         
         # Parse label gesture (Y) & environment/domain (D)
         parts = filename.split('-')
