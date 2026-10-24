@@ -1,10 +1,13 @@
-Library yang digunakan :
-
+# Machine Learning & Deep Learning
 torch
 torchvision
+
+# Data Processing & Scientific Computing
 numpy
 scipy
+pandas
+
+# Data Visualization & Evaluation
 matplotlib
 seaborn
 scikit-learn
-pandas
