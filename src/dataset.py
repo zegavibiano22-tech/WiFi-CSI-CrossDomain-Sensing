@@ -9,7 +9,6 @@ from torch.utils.data import Dataset, DataLoader
 
 TARGET_T = 20
 
-
 def scan_dataset(data_root):
     """Scan data_root/userX/*.mat -> DataFrame (user, gesture, torso, face, rep, rx)."""
     rows = []
