@@ -1,1 +1,10 @@
+Library yang digunakan :
 
+- torch
+- torchvision
+- numpy
+- scipy
+- matplotlib
+- seaborn
+- scikit-learn
+- pandas
